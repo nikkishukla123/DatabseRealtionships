@@ -12,35 +12,49 @@ main()
     await mongoose.connect('mongodb://127.0.0.1:27017/relationDemo')
   }
 
+
+
   const customerSchema = new Schema({
       name:String,
       email: { type: String, unique: true }
   });
+
+// ✅ MIDDLEWARE (BEFORE model creation)
+  customerSchema.post("findOneAndDelete",async(data)=>{ //Middleware must be defined before mongoose.model() and must match the exact method name.
+    if(data){
+      let res = await Order.deleteMany({ customer: data._id})
+    }
+    console.log("deletion successfull")
+})
+
+// ---------------- MODEL ----------------
   const Customer = mongoose.model("Customer",customerSchema)  // collection
-// adding data in customer
+
+// ---------------- ORDER MODEL ----------------
+const orderSchema = new Schema({
+  product:String,
+  price: Number,
+  customer:{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer"
+  },
+});
+// collection
+const Order = mongoose.model("Order",orderSchema)  // collection
+
+// ------ adding data in customer--------
 const addcustom = async() => {
     let c1 = new Customer ({
         name:"neha",
         email: "neha@gmail.com"
     })
    let result = await c1.save()
-   console.log(result)
    return result._id;
 }
 
 
-// order schema
-  const orderSchema = new Schema({
-      product:String,
-      price: Number,
-      customer:{
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Customer"
-      },
-  });
-  const Order = mongoose.model("Order",orderSchema)  // collection
 
-// order insertion and calling customer to get thier id
+// -------order insertion and calling customer to get thier id------
   const addorder = async() => {
     const customerId = await addcustom(); // get customer id
 
@@ -63,7 +77,7 @@ const addcustom = async() => {
     ];
   
     let res = await Order.insertMany(orders);
-    console.log("Orders Added:", res); 
+    // console.log("Orders Added:", res); 
 }
 addorder();  // calling the order function
 
@@ -74,4 +88,13 @@ const findorder = async() => {
 }
 findorder()
 
+
+
+
+// ---------------- DELETE FUNCTION ----------------
+const delcustomer = async() => {
+  const data = await Customer.findOneAndDelete({ _id: "694fbe52e34b7e87d88ae193" })
+   console.log(data);
+}
+delcustomer();
 
